@@ -40,7 +40,7 @@ def bw(tensors):
 tp_size = 4
 tp_depth = 1
 
-model_name = 'kakaobrain/kogpt'
+model_name = 'EleutherAI/polyglot-ko-1.3b'
 dataset_name = "squad_kor_v1"
 
 # parallel context 생성
@@ -55,15 +55,14 @@ parallel_context = ParallelContext.from_torch(
 
 # 토크나이저 생성
 tokenizer = AutoTokenizer.from_pretrained(
-  model_name, revision='KoGPT6B-ryan1.5b-float16',  # or float32 version: revision=KoGPT6B-ryan1.5b
-  bos_token='[BOS]', eos_token='[EOS]', unk_token='[UNK]', pad_token='[PAD]', mask_token='[MASK]'
+  model_name,  # or float32 version: revision=KoGPT6B-ryan1.5b
 )
 
 # 모델 생성 및 병렬화 수행
 model_tp = AutoModelForCausalLM.from_pretrained(
-    model_name, revision='KoGPT6B-ryan1.5b',  # or float32 version: revision=KoGPT6B-ryan1.5b
+    model_name,  # or float32 version: revision=KoGPT6B-ryan1.5b
     pad_token_id=tokenizer.eos_token_id,
-    torch_dtype='auto', low_cpu_mem_usage=True
+    torch_dtype='fp32', low_cpu_mem_usage=True
 )
 wrapper_tp = TensorParallel(model_tp, parallel_context)
 allocate_params(wrapper_tp, parallel_context)

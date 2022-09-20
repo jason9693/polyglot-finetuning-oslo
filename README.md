@@ -1,10 +1,10 @@
-# OSLO로 KoGPT 분산 학습하기
+# OSLO로 Polyglot 분산 학습하기
 
 대규모 분산학습라이브러리인 OSLO의 TensorParallel을 사용하여 
 모델을 쪼개서 학습하는 예제.
 
 ## 스펙
-모델 : 카카오브레인 KoGPT (fp32)
+모델 : EleutherAI Polyglot-ko 1.3B
 데이터셋 : KorQuADv1
 
 
