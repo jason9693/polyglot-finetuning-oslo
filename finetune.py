@@ -16,26 +16,6 @@ from oslo.torch.distributed import ParallelContext, ParallelMode
 import time
 
 
-def latency_trace(func):
-    def wrapper(*args, **kwargs):
-        start = time.time()
-        result = func(*args, **kwargs)
-        end = time.time()
-        return result, end - start
-
-    return wrapper
-
-
-@latency_trace
-def fw(func, *args, **kwargs):
-    return func(*args, **kwargs).loss
-
-
-@latency_trace
-def bw(tensors):
-    return tensors.backward()
-
-
 # 병렬 사이즈 설정
 tp_size = 4
 tp_depth = 1
@@ -55,12 +35,12 @@ parallel_context = ParallelContext.from_torch(
 
 # 토크나이저 생성
 tokenizer = AutoTokenizer.from_pretrained(
-  model_name,  # or float32 version: revision=KoGPT6B-ryan1.5b
+  model_name
 )
 
 # 모델 생성 및 병렬화 수행
 model_tp = AutoModelForCausalLM.from_pretrained(
-    model_name,  # or float32 version: revision=KoGPT6B-ryan1.5b
+    model_name,
     pad_token_id=tokenizer.eos_token_id,
     torch_dtype='fp32', low_cpu_mem_usage=True
 )
@@ -100,22 +80,14 @@ for data in dataloader:
         max_length=512,
     ).to("cuda")
 
-    loss_tp, tp_fw_time = fw(wrapper_tp, **inputs, labels=inputs["input_ids"])
+    loss_tp = wrapper_tp(**inputs, labels=inputs["input_ids"]).loss
 
     if dist.get_rank() == 0:
         print(f"loss:{loss_tp}")
         wandb.log({"loss": loss_tp})
 
-    _, tp_bw_time = bw(loss_tp)
+    _ = loss_tp.backward()
     optimizer_tp.step()
-
-    if dist.get_rank() == 0:
-        wandb.log(
-            {
-                "forward.time:": tp_fw_time,
-                "backward.time:": tp_bw_time,
-            }
-        )
 
 # 저장
 wrapper_tp.save_parallelized("test/", merge_checkpoints=False)
